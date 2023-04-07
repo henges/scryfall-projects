@@ -69,12 +69,12 @@ CREATE TABLE scryfall.card_face
 COMMENT
 ON column scryfall.card.formats IS 'Not currently modelling "restricted"-ness';
 
-CREATE TABLE scryfall.card_set
+CREATE TABLE scryfall.card_edition
 (
     id               uuid            not null,
     card_id          uuid            not null,
     set_code         varchar(8)      not null,
-    collector_number int             not null,
+    collector_number text            not null,
     rarity           scryfall.rarity not null,
     is_reprint       bool            not null default false,
     scryfall_url     text            not null,

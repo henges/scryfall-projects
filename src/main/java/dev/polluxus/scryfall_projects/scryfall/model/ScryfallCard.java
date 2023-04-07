@@ -2,6 +2,7 @@ package dev.polluxus.scryfall_projects.scryfall.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -15,8 +16,11 @@ public record ScryfallCard(
         UUID id, // Unique printing ID
         String rarity,
         boolean reprint,
-        @JsonProperty("collectorNumber") String collectorNumber,
+        String set,
+        @JsonProperty("set_name") String setName,
+        @JsonProperty("collector_number") String collectorNumber,
         @JsonProperty("scryfall_uri") String scryfallUri,
+        @JsonProperty("released_at") Instant releasedAt,
         // Per-face properties
         String name,
         @JsonProperty("mana_cost") String manaCost,
