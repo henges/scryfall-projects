@@ -35,12 +35,6 @@ public class ScryfallCardCardConverter implements Converter<ScryfallCard, Card> 
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        final Set<Game> games = source.games()
-                .stream()
-                .map(Game::get)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
         final List<CardFace> faces;
 
         // Do we have card faces? If so, get *most* card info from there.
@@ -64,7 +58,6 @@ public class ScryfallCardCardConverter implements Converter<ScryfallCard, Card> 
             name,
             faces,
             formats,
-            games,
             colours,
             keywords
         );

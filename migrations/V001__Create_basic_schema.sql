@@ -6,7 +6,7 @@ CREATE TYPE scryfall.game AS ENUM (
     'ARENA',
     'MTGO',
     'PAPER'
-);
+    );
 
 CREATE TYPE scryfall.colour AS ENUM (
     'W',
@@ -15,7 +15,7 @@ CREATE TYPE scryfall.colour AS ENUM (
     'R',
     'G',
     'COLOURLESS'
-);
+    );
 
 CREATE TYPE scryfall.format AS ENUM (
     'STANDARD',
@@ -29,7 +29,7 @@ CREATE TYPE scryfall.format AS ENUM (
     'BRAWL',
     'HISTORIC',
     'PAUPER'
-);
+    );
 
 CREATE TYPE scryfall.rarity AS ENUM (
     'S',
@@ -37,7 +37,7 @@ CREATE TYPE scryfall.rarity AS ENUM (
     'U',
     'R',
     'M'
-);
+    );
 
 CREATE TABLE scryfall.set
 (
@@ -51,7 +51,6 @@ CREATE TABLE scryfall.card
     id              uuid primary key      not null,
     name            text                  not null,
     formats         scryfall.format array not null,
-    games           scryfall.game array   not null,
     colour_identity scryfall.colour array not null,
     keywords        text array            not null
 );
@@ -78,13 +77,14 @@ ON column scryfall.card.formats IS 'Not currently modelling "restricted"-ness';
 
 CREATE TABLE scryfall.card_edition
 (
-    id               uuid            not null, -- Individual ID
-    card_id          uuid            not null, -- Oracle ID
-    set_code         varchar(8)      not null,
-    collector_number text            not null,
-    rarity           scryfall.rarity not null,
-    is_reprint       bool            not null default false,
-    scryfall_url     text            not null,
+    id               uuid                not null, -- Individual ID
+    card_id          uuid                not null, -- Oracle ID
+    set_code         varchar(8)          not null,
+    collector_number text                not null,
+    rarity           scryfall.rarity     not null,
+    is_reprint       bool                not null default false,
+    games            scryfall.game array not null,
+    scryfall_url     text                not null,
     foreign key (card_id) references scryfall.card (id),
     foreign key (set_code) references scryfall.set (code),
     primary key (id, card_id)

@@ -93,14 +93,13 @@ public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
     }
 
     private static final String CARD_UPSERT_STATEMENT = """
-            INSERT INTO scryfall.card(id, name, formats, games, colour_identity, keywords)
+            INSERT INTO scryfall.card(id, name, formats, colour_identity, keywords)
             VALUES (
                 '$1',
                 E'$2',
                 ARRAY[$3]::scryfall.format[],
-                ARRAY[$4]::scryfall.game[],
-                ARRAY[$5]::scryfall.colour[],
-                ARRAY[$6]
+                ARRAY[$4]::scryfall.colour[],
+                ARRAY[$5]
             ) ON CONFLICT DO NOTHING;
             """.trim().replaceAll("([\s\n])+", " ");
 
@@ -125,9 +124,8 @@ public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
                 .replace("$1", card.id().toString())
                 .replace("$2", StringUtils.escapeQuotes(card.name()))
                 .replace("$3", StringUtils.delimitedString(card.formats()))
-                .replace("$4", StringUtils.delimitedString(card.games()))
-                .replace("$5", StringUtils.delimitedString(card.colourIdentity()))
-                .replace("$6", StringUtils.delimitedString(card.keywords(), true)));
+                .replace("$4", StringUtils.delimitedString(card.colourIdentity()))
+                .replace("$5", StringUtils.delimitedString(card.keywords(), true)));
 
         for (CardFace cf : card.faces()) {
 
@@ -151,8 +149,8 @@ public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
     }
 
     private static final String EDITION_UPSERT_STATEMENT = """
-            INSERT INTO scryfall.card_edition(id, card_id, set_code, collector_number, rarity, is_reprint, scryfall_url)
-            VALUES ('$1', '$2', '$3', '$4', '$5'::scryfall.rarity, $6, '$7')
+            INSERT INTO scryfall.card_edition(id, card_id, set_code, collector_number, rarity, is_reprint, scryfall_url, games)
+            VALUES ('$1', '$2', '$3', '$4', '$5'::scryfall.rarity, $6, '$7', ARRAY[$8]::scryfall.game[])
             ON CONFLICT DO NOTHING;
             """.trim().replaceAll("([\s\n])+", " ");
 
@@ -165,7 +163,8 @@ public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
                 .replace("$4", ed.collectorNumber())
                 .replace("$5", ed.rarity().toString())
                 .replace("$6", String.format("%b", ed.isReprint()))
-                .replace("$7", ed.scryfallUrl());
+                .replace("$7", ed.scryfallUrl())
+                .replace("$8", StringUtils.delimitedString(ed.games()));
 
         return sql + "\n";
     }

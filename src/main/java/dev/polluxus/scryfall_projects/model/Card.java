@@ -14,7 +14,6 @@ public record Card(
     String name,
     List<CardFace> faces,
     Set<Format> formats,
-    Set<Game> games,
     Set<Colour> colourIdentity,
     Set<String> keywords
 ) {
@@ -40,6 +39,7 @@ public record Card(
        String collectorNumber,
        Rarity rarity,
        boolean isReprint,
+       Set<Game> games,
        String scryfallUrl
     ) {}
 }
