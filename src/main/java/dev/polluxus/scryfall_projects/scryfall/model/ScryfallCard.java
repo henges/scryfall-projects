@@ -1,8 +1,10 @@
 package dev.polluxus.scryfall_projects.scryfall.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -20,7 +22,7 @@ public record ScryfallCard(
         @JsonProperty("set_name") String setName,
         @JsonProperty("collector_number") String collectorNumber,
         @JsonProperty("scryfall_uri") String scryfallUri,
-        @JsonProperty("released_at") Instant releasedAt,
+        @JsonProperty("released_at") @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd") Date releasedAt,
         // Per-face properties
         String name,
         @JsonProperty("mana_cost") String manaCost,
@@ -41,6 +43,7 @@ public record ScryfallCard(
             @JsonProperty("mana_cost") String manaCost,
             @JsonProperty("type_line") String typeLine,
             @JsonProperty("oracle_text") String oracleText,
+            @JsonProperty("color_indicator") List<String> colorIndicator,
             String power,
             String toughness,
             String loyalty,

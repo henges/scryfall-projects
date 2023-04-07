@@ -9,7 +9,8 @@ public enum Colour {
     U("U"),
     B("B"),
     R("R"),
-    G("G");
+    G("G"),
+    COLOURLESS("COLOURLESS");
 
     final String colourName;
 

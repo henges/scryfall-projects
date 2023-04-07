@@ -23,6 +23,8 @@ public class ScryfallCardCardConverter implements Converter<ScryfallCard, Card> 
 
         final UUID cardId = source.oracleId();
 
+        final String name = source.name();
+
         final Set<Format> formats = source.legalities()
                 .entrySet()
                 .stream()
@@ -53,6 +55,7 @@ public class ScryfallCardCardConverter implements Converter<ScryfallCard, Card> 
 
         return new Card(
             cardId,
+            name,
             faces,
             formats,
             games

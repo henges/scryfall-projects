@@ -1,8 +1,6 @@
 package dev.polluxus.scryfall_projects.model.enums;
 
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public enum Format {
@@ -27,6 +25,8 @@ public enum Format {
                             f -> f
                     ));
 
+    private static final Set<String> VALID_FORMATS = STRING_TO_FORMAT_MAP.keySet();
+
     Format(String formatName) {
         this.formatName = formatName;
     }
@@ -34,4 +34,14 @@ public enum Format {
     public static Format get(String name) {
         return STRING_TO_FORMAT_MAP.get(name);
     }
+
+    public static boolean hasValidFormat(Map<String, String> formats) {
+
+        return formats.entrySet()
+                .stream()
+                .filter(e -> VALID_FORMATS.contains(e.getKey()))
+                .filter(e -> e.getValue().equals("legal"))
+                .toList().size() > 0;
+    }
+
 }

@@ -13,7 +13,8 @@ CREATE TYPE scryfall.colour AS ENUM (
     'U',
     'B',
     'R',
-    'G'
+    'G',
+    'COLOURLESS'
 );
 
 CREATE TYPE scryfall.format AS ENUM (
@@ -47,6 +48,7 @@ CREATE TABLE scryfall.set
 CREATE TABLE scryfall.card
 (
     id      uuid unique           not null,
+    name    text                  not null,
     formats scryfall.format array not null,
     games   scryfall.game array   not null
 );
@@ -71,8 +73,8 @@ ON column scryfall.card.formats IS 'Not currently modelling "restricted"-ness';
 
 CREATE TABLE scryfall.card_edition
 (
-    id               uuid            not null,
-    card_id          uuid            not null,
+    id               uuid            not null, -- Individual ID
+    card_id          uuid            not null, -- Oracle ID
     set_code         varchar(8)      not null,
     collector_number text            not null,
     rarity           scryfall.rarity not null,

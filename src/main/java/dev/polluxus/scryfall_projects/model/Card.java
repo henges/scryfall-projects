@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public record Card(
     UUID id,
+    String name,
     List<CardFace> faces,
     Set<Format> formats,
     Set<Game> games

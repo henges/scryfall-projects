@@ -11,8 +11,8 @@ public class ScryfallCardCardEditionConverter implements Converter<ScryfallCard,
     @Override
     public CardEdition convert(ScryfallCard source) {
 
-        final UUID id = source.oracleId();
-        final UUID cardId = source.id();
+        final UUID id = source.id();
+        final UUID cardId = source.oracleId();
         final String setCode = source.set();
         final String collectorNumber = source.collectorNumber();
         final Rarity rarity = Rarity.get(source.rarity());

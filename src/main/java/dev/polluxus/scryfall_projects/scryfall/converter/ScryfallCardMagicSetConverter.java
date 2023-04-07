@@ -8,6 +8,6 @@ public class ScryfallCardMagicSetConverter implements Converter<ScryfallCard, Ma
     @Override
     public MagicSet convert(ScryfallCard source) {
 
-        return new MagicSet(source.set(), source.setName(), source.releasedAt());
+        return new MagicSet(source.set(), source.setName(), source.releasedAt().toInstant());
     }
 }

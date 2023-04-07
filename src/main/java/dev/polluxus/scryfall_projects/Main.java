@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JSR310Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dev.polluxus.scryfall_projects.processor.Processor;
 import dev.polluxus.scryfall_projects.processor.ScryfallSqlProcessor;
 import dev.polluxus.scryfall_projects.scryfall.model.ScryfallCard;
@@ -13,23 +15,29 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
 
     public static void main(String[] args) {
 
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+
         final ObjectMapper mapper = new ObjectMapper()
                 .registerModule(new Jdk8Module())
+                .registerModule(new JavaTimeModule())
+                .setDateFormat(df)
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
         final List<ScryfallCard> cards;
         try {
-            final var fileReader = Files.newBufferedReader(Path.of("src/main/resources/card_data/first-1000-cards.json"));
+            final var fileReader = Files.newBufferedReader(Path.of("src/main/resources/card_data/oracle-cards-20230403090225.json"));
             final var reader = mapper.readerFor(new TypeReference<ScryfallCard>() {}).readValues(fileReader);
             final FileWriter writer = new FileWriter("output/output.sql");
             process(reader, writer);
@@ -63,6 +71,19 @@ public class Main {
             // Retrieve only the cards we care about
             final ScryfallCard[] copy = Arrays.copyOf(buf, i);
             executor.submit(() -> processor.process(Arrays.asList(copy), writer));
+        }
+
+        try {
+            executor.shutdown();
+            boolean passed = executor.awaitTermination(300, TimeUnit.SECONDS);
+            if (!passed) {
+                throw new RuntimeException("DNF");
+            }
+            processor.commit(writer);
+            writer.flush();
+            writer.close();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
         // Done!
     }
