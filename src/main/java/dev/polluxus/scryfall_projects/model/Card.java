@@ -14,7 +14,9 @@ public record Card(
     String name,
     List<CardFace> faces,
     Set<Format> formats,
-    Set<Game> games
+    Set<Game> games,
+    Set<Colour> colourIdentity,
+    Set<String> keywords
 ) {
 
     public record CardFace(
@@ -22,12 +24,13 @@ public record Card(
        String name,
        int manaValue,
        List<String> manaCost,
-       List<String> cardTypes,
+       Set<Colour> colours,
+       List<String> types,
+       List<String> subtypes,
        String oracleText,
        String power,
        String toughness,
-       String loyalty,
-       Set<Colour> colourIdentity
+       String loyalty
     ) {}
 
     public record CardEdition(

@@ -23,6 +23,7 @@ public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
 
     private final ConcurrentHashMap<UUID, Boolean> processedOracleIds = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Boolean> processedSets = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Boolean> processedEditions = new ConcurrentHashMap<>();
     private final ScryfallCardCardConverter cardConverter = new ScryfallCardCardConverter();
     private final ScryfallCardCardEditionConverter editionConverter = new ScryfallCardCardEditionConverter();
     private final ScryfallCardMagicSetConverter setConverter = new ScryfallCardMagicSetConverter();
@@ -38,6 +39,8 @@ public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
 
         setUpserts.forEach(s -> writeString(writer, s));
         cardUpserts.forEach(s -> writeString(writer, s));
+        // editions are dependent on both of the above, so
+        // ensure they are inserted after them
         editionUpserts.forEach(s -> writeString(writer, s));
 
         writeString(writer, "END TRANSACTION;\n");
@@ -52,20 +55,26 @@ public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
                 System.out.println("Skipping invalid card " + e.name());
                 continue;
             }
-
-            // Avoid processing oracle IDs and sets we've already processed.
+            // Avoid processing entities we've already processed.
             boolean setExists = processedSets.putIfAbsent(e.set(), true) != null;
             if (!setExists) {
                 final MagicSet set = setConverter.convert(e);
                 setUpserts.add(getSetUpsertSql(set));
+            }
+            if (e.oracleId() == null) {
+                System.out.println("WTF! Busted ass data" + e);
+                continue;
             }
             boolean cardExists = processedOracleIds.putIfAbsent(e.oracleId(), true) != null;
             if (!cardExists) {
                 final Card card = cardConverter.convert(e);
                 cardUpserts.add(getCardUpsertSql(card));
             }
-            final CardEdition edition = editionConverter.convert(e);
-            editionUpserts.add(getEditionUpsertSql(edition));
+            boolean editionExists = processedEditions.putIfAbsent(e.set() + "~" + e.collectorNumber(), true) != null;
+            if (!editionExists) {
+                final CardEdition edition = editionConverter.convert(e);
+                editionUpserts.add(getEditionUpsertSql(edition));
+            }
         }
     }
 
@@ -84,23 +93,29 @@ public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
     }
 
     private static final String CARD_UPSERT_STATEMENT = """
-            INSERT INTO scryfall.card(id, name, formats, games)
+            INSERT INTO scryfall.card(id, name, formats, games, colour_identity, keywords)
             VALUES (
                 '$1',
                 E'$2',
                 ARRAY[$3]::scryfall.format[],
-                ARRAY[$4]::scryfall.game[]
+                ARRAY[$4]::scryfall.game[],
+                ARRAY[$5]::scryfall.colour[],
+                ARRAY[$6]
             ) ON CONFLICT DO NOTHING;
-            """.trim().replaceAll("\\s+", " ");
+            """.trim().replaceAll("([\s\n])+", " ");
 
     private static final String CARD_FACE_UPSERT_STATEMENT = """
             INSERT INTO scryfall.card_face(
-                card_id, name, mana_value, mana_cost, card_types, oracle_text, power, toughness, loyalty, colour_identity
+                card_id, name, mana_value, mana_cost, types,
+                subtypes, oracle_text, power, toughness, loyalty,
+                colours
             )
             VALUES(
-                '$01', E'$02', $03, ARRAY[$04], ARRAY[$05], E'$06', $07, $08, $09, ARRAY[$10]::scryfall.colour[]
+                '$01', E'$02', $03, ARRAY[$04], ARRAY[$05],
+                ARRAY[$06], E'$07', $08, $09, $10,
+                ARRAY[$11]::scryfall.colour[]
             ) ON CONFLICT DO NOTHING;
-            """.trim().replaceAll("\\s+", " ");
+            """.trim().replaceAll("([\s\n])+", " ");
 
     private static String getCardUpsertSql(Card card) {
 
@@ -110,7 +125,9 @@ public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
                 .replace("$1", card.id().toString())
                 .replace("$2", StringUtils.escapeQuotes(card.name()))
                 .replace("$3", StringUtils.delimitedString(card.formats()))
-                .replace("$4", StringUtils.delimitedString(card.games())));
+                .replace("$4", StringUtils.delimitedString(card.games()))
+                .replace("$5", StringUtils.delimitedString(card.colourIdentity()))
+                .replace("$6", StringUtils.delimitedString(card.keywords(), true)));
 
         for (CardFace cf : card.faces()) {
 
@@ -121,12 +138,13 @@ public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
                     .replace("$02", StringUtils.escapeQuotes(cf.name()))
                     .replace("$03", String.format("%d", cf.manaValue()))
                     .replace("$04", StringUtils.delimitedString(cf.manaCost()))
-                    .replace("$05", StringUtils.delimitedString(cf.cardTypes(), true))
-                    .replace("$06", StringUtils.escapeQuotes(cf.oracleText()))
-                    .replace("$07", StringUtils.quotedStringOrNullLiteral(cf.power()))
-                    .replace("$08", StringUtils.quotedStringOrNullLiteral(cf.toughness()))
-                    .replace("$09", StringUtils.quotedStringOrNullLiteral(cf.loyalty()))
-                    .replace("$10", StringUtils.delimitedString(cf.colourIdentity())));
+                    .replace("$05", StringUtils.delimitedString(cf.types(), true))
+                    .replace("$06", StringUtils.delimitedString(cf.subtypes(), true))
+                    .replace("$07", StringUtils.escapeQuotes(cf.oracleText()))
+                    .replace("$08", StringUtils.quotedStringOrNullLiteral(cf.power()))
+                    .replace("$09", StringUtils.quotedStringOrNullLiteral(cf.toughness()))
+                    .replace("$10", StringUtils.quotedStringOrNullLiteral(cf.loyalty()))
+                    .replace("$11", StringUtils.delimitedString(cf.colours())));
         }
 
         return sb + "\n";
@@ -136,7 +154,7 @@ public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
             INSERT INTO scryfall.card_edition(id, card_id, set_code, collector_number, rarity, is_reprint, scryfall_url)
             VALUES ('$1', '$2', '$3', '$4', '$5'::scryfall.rarity, $6, '$7')
             ON CONFLICT DO NOTHING;
-            """.trim().replaceAll("\\s+", " ");
+            """.trim().replaceAll("([\s\n])+", " ");
 
     private static String getEditionUpsertSql(CardEdition ed) {
 

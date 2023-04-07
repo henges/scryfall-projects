@@ -26,7 +26,7 @@ public record ScryfallCard(
         // Per-face properties
         String name,
         @JsonProperty("mana_cost") String manaCost,
-        int cmc,
+        double cmc,
         @JsonProperty("type_line") String typeLine,
         @JsonProperty("oracle_text") String oracleText,
         String power,
@@ -35,6 +35,7 @@ public record ScryfallCard(
         List<String> colors,
         @JsonProperty("color_identity") List<String> colorIdentity,
         // May be empty
+        List<String> keywords,
         @JsonProperty("card_faces") List<ScryfallCardFace> cardFaces
 ) {
 

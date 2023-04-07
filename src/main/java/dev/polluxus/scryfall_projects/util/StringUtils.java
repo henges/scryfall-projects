@@ -1,6 +1,7 @@
 package dev.polluxus.scryfall_projects.util;
 
 import dev.polluxus.scryfall_projects.model.enums.Colour;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -51,17 +52,25 @@ public class StringUtils {
                 .toList();
     }
 
-    public static List<String> parseCardTypes(final String typeLine) {
-        return Arrays.stream(typeLine.split("(\s)"))
-                .filter(s -> s != null && !s.equals("") && !s.equals("—") && !s.equals("-"))
-                .toList();
+    public static Pair<List<String>, List<String>> parseCardTypes(final String typeLine) {
+
+        String[] typesArr = typeLine.split("\s(—|-)\s");
+        final List<String> types = new ArrayList<>();
+        final List<String> subtypes = new ArrayList<>();
+        if (typesArr.length >= 1) {
+            types.addAll(Arrays.asList(typesArr[0].split("\s+")));
+        }
+        if (typesArr.length == 2) {
+            subtypes.addAll(Arrays.asList(typesArr[1].split("\s+")));
+        }
+
+        return Pair.of(types, subtypes);
     }
 
-    public static Set<Colour> parseColourIdentity(final List<String> costComponents) {
+    public static Set<Colour> parseColours(final List<String> colors) {
 
-        final Set<Colour> result = costComponents.stream()
+        final Set<Colour> result = colors.stream()
                 // Hybrid mana costs contribute to colour identity
-                .flatMap(s -> Arrays.stream(s.split("/")))
                 .map(Colour::get)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());

@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -35,11 +36,10 @@ public class Main {
                 .setDateFormat(df)
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-        final List<ScryfallCard> cards;
         try {
-            final var fileReader = Files.newBufferedReader(Path.of("src/main/resources/card_data/oracle-cards-20230403090225.json"));
+            final var fileReader = Files.newBufferedReader(Path.of("src/main/resources/card_data/default-cards-20230403090602.json"));
             final var reader = mapper.readerFor(new TypeReference<ScryfallCard>() {}).readValues(fileReader);
-            final FileWriter writer = new FileWriter("output/output.sql");
+            final FileWriter writer = new FileWriter("output/output-" + Instant.now().getEpochSecond() + ".sql");
             process(reader, writer);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -60,7 +60,10 @@ public class Main {
             if (i == batchSize) {
 
                 final List<ScryfallCard> copy = Arrays.asList(buf);
-                executor.submit(() -> processor.process(copy, writer));
+//                executor.submit(() ->
+                        processor.process(copy, writer)
+//                )
+                ;
                 i = 0;
             }
         }
@@ -70,7 +73,10 @@ public class Main {
 
             // Retrieve only the cards we care about
             final ScryfallCard[] copy = Arrays.copyOf(buf, i);
-            executor.submit(() -> processor.process(Arrays.asList(copy), writer));
+//            executor.submit(() ->
+                    processor.process(Arrays.asList(copy), writer)
+//            )
+            ;
         }
 
         try {

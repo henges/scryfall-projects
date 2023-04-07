@@ -2,9 +2,11 @@ package dev.polluxus.scryfall_projects.scryfall.converter;
 
 import dev.polluxus.scryfall_projects.model.Card;
 import dev.polluxus.scryfall_projects.model.Card.CardFace;
+import dev.polluxus.scryfall_projects.model.enums.Colour;
 import dev.polluxus.scryfall_projects.model.enums.Format;
 import dev.polluxus.scryfall_projects.model.enums.Game;
 import dev.polluxus.scryfall_projects.scryfall.model.ScryfallCard;
+import dev.polluxus.scryfall_projects.util.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
@@ -53,12 +55,18 @@ public class ScryfallCardCardConverter implements Converter<ScryfallCard, Card> 
             faces = List.of(cardToCardFace.convert(source));
         }
 
+        final Set<Colour> colours = StringUtils.parseColours(source.colorIdentity());
+
+        final Set<String> keywords = Set.copyOf(source.keywords());
+
         return new Card(
             cardId,
             name,
             faces,
             formats,
-            games
+            games,
+            colours,
+            keywords
         );
     }
 }

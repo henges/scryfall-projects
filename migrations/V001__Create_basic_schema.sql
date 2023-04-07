@@ -32,40 +32,45 @@ CREATE TYPE scryfall.format AS ENUM (
 );
 
 CREATE TYPE scryfall.rarity AS ENUM (
-    'M',
-    'R',
+    'S',
+    'C',
     'U',
-    'C'
+    'R',
+    'M'
 );
 
 CREATE TABLE scryfall.set
 (
-    code         varchar(8) unique not null,
-    name         text              not null,
-    release_date date              not null
+    code         varchar(8) primary key not null,
+    name         text                   not null,
+    release_date date                   not null
 );
 
 CREATE TABLE scryfall.card
 (
-    id      uuid unique           not null,
-    name    text                  not null,
-    formats scryfall.format array not null,
-    games   scryfall.game array   not null
+    id              uuid primary key      not null,
+    name            text                  not null,
+    formats         scryfall.format array not null,
+    games           scryfall.game array   not null,
+    colour_identity scryfall.colour array not null,
+    keywords        text array            not null
 );
 
 CREATE TABLE scryfall.card_face
 (
-    card_id         uuid                  not null,
-    name            text                  not null,
-    mana_value      int                   not null,
-    mana_cost       text array            not null, -- Should be array of mana symbols
-    card_types      text array            not null,
-    oracle_text     text                  not null,
-    power           text                  null,
-    toughness       text                  null,
-    loyalty         text                  null,
-    colour_identity scryfall.colour array not null,
-    foreign key (card_id) references scryfall.card (id)
+    card_id     uuid                  not null,
+    name        text                  not null,
+    mana_value  int                   not null,
+    mana_cost   text array            not null, -- Should be array of mana symbols
+    types       text array            not null,
+    subtypes    text array            not null,
+    oracle_text text                  not null,
+    power       text                  null,
+    toughness   text                  null,
+    loyalty     text                  null,
+    colours     scryfall.colour array not null,
+    foreign key (card_id) references scryfall.card (id),
+    primary key (card_id, name)
 );
 
 COMMENT
@@ -81,5 +86,6 @@ CREATE TABLE scryfall.card_edition
     is_reprint       bool            not null default false,
     scryfall_url     text            not null,
     foreign key (card_id) references scryfall.card (id),
-    foreign key (set_code) references scryfall.set (code)
+    foreign key (set_code) references scryfall.set (code),
+    primary key (id, card_id)
 );

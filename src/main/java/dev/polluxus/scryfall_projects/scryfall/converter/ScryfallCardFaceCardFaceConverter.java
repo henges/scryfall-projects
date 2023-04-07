@@ -7,7 +7,6 @@ import dev.polluxus.scryfall_projects.scryfall.model.ScryfallCard.ScryfallCardFa
 import dev.polluxus.scryfall_projects.util.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -22,18 +21,25 @@ public class ScryfallCardFaceCardFaceConverter implements Converter<Pair<Scryfal
 
         final UUID cardId = card.oracleId();
         final String name = face.name();
-        final int manaValue = card.cmc();
+        final int manaValue = (int) card.cmc();
         final List<String> manaCost = StringUtils.parseManaCost(face.manaCost());
-        final List<String> cardTypes = StringUtils.parseCardTypes(face.typeLine());
         final String oracleText = face.oracleText();
         final String power = face.power();
         final String toughness = face.toughness();
         final String loyalty = face.loyalty();
+        final Set<Colour> colours;
 
-        final Set<Colour> colourIdentity = StringUtils.parseColourIdentity(manaCost);
+        if (face.colors() != null) {
+            colours = StringUtils.parseColours(face.colors());
+        } else {
+            System.out.println(face);
+            colours = StringUtils.parseColours(card.colors());
+        }
+
+        final Pair<List<String>, List<String>> types = StringUtils.parseCardTypes(face.typeLine());
 
         return new CardFace(
-                cardId, name, manaValue, manaCost, cardTypes, oracleText, power, toughness, loyalty, colourIdentity
+                cardId, name, manaValue, manaCost, colours, types.getLeft(), types.getRight(), oracleText, power, toughness, loyalty
         );
     }
 }
