@@ -14,18 +14,18 @@ public enum Rarity {
     C("common"),
     S("special", "bonus");
 
-    final Set<String> rarityName;
+    final Set<String> rarityNames;
 
     private static final Map<String, Rarity> STRING_TO_RARITY_MAP = EnumSet.allOf(Rarity.class)
             .stream()
-            .flatMap(r -> r.rarityName.stream().map(n -> Pair.of(n, r)))
+            .flatMap(r -> r.rarityNames.stream().map(n -> Pair.of(n, r)))
             .collect(Collectors.toMap(
                     Pair::getLeft,
                     Pair::getRight
             ));
 
-    Rarity(String... rarityName) {
-        this.rarityName = Set.of(rarityName);
+    Rarity(String... rarityNames) {
+        this.rarityNames = Set.of(rarityNames);
     }
 
     public static Rarity get(String name) {

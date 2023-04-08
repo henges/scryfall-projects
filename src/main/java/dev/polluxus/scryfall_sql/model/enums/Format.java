@@ -40,8 +40,6 @@ public enum Format {
         return formats.entrySet()
                 .stream()
                 .filter(e -> VALID_FORMATS.contains(e.getKey()))
-                .filter(e -> e.getValue().equals("legal"))
-                .toList().size() > 0;
+                .anyMatch(e -> e.getValue().equals("legal"));
     }
-
 }

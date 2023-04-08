@@ -26,11 +26,8 @@ public class InMemoryEtlWriter implements EtlWriter {
     public InMemoryEtlWriter(Configuration config) {
 
         this.outputWriter = Io.openWriter(config);
-        this.format = new SqlFormat();
+        this.format = config.format();
     }
-
-    @Override
-    public void start() {}
 
     @Override
     public void write(Collection<MagicSet> sets, Collection<Card> cards, Collection<CardEdition> editions) {
@@ -41,7 +38,7 @@ public class InMemoryEtlWriter implements EtlWriter {
     }
 
     @Override
-    public void end() {
+    public void commit() {
 
         format.start().ifPresent(s -> Io.writeString(outputWriter, s));
 

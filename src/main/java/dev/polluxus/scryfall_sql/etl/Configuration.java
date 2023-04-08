@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import dev.polluxus.scryfall_sql.io.format.EtlFormat;
+import dev.polluxus.scryfall_sql.io.format.JsonFormat;
+import dev.polluxus.scryfall_sql.io.format.SqlFormat;
 import dev.polluxus.scryfall_sql.io.writer.EtlWriter;
 import dev.polluxus.scryfall_sql.io.writer.InMemoryEtlWriter;
 import dev.polluxus.scryfall_sql.io.writer.TmpFileEtlWriter;
@@ -26,18 +29,22 @@ public class Configuration {
 
     private final String writer;
 
+    private final String format;
+
     public Configuration(
             String inputPath,
             String outputPath,
             String parallelism,
             String batchSize,
-            String writer
+            String writer,
+            String format
     ) {
         this.inputPath = inputPath;
         this.outputPath = outputPath;
         this.parallelism = parallelism;
         this.batchSize = batchSize;
         this.writer = writer;
+        this.format = format;
 
         this.mapper = initMapper();
     }
@@ -78,7 +85,7 @@ public class Configuration {
         return Math.min(Integer.parseInt(parallelism), MAX_PARALLELISM);
     }
 
-    public Integer batchSize() {
+    public int batchSize() {
         if (batchSize == null) {
             return 50;
         }
@@ -87,10 +94,23 @@ public class Configuration {
 
     public EtlWriter writer() {
 
-        return switch (writer) {
+        final var test = writer == null ? "" : writer;
+
+        return switch (test) {
             case "IN_MEMORY" -> new InMemoryEtlWriter(this);
             case "TMP_FILE" -> new TmpFileEtlWriter(this);
             default -> new TmpFileEtlWriter(this);
+        };
+    }
+
+    public EtlFormat format() {
+
+        final var test = format == null ? "" : format;
+
+        return switch (test) {
+            case "JSON" -> new JsonFormat(this);
+            case "SQL" -> new SqlFormat();
+            default -> new SqlFormat();
         };
     }
 }

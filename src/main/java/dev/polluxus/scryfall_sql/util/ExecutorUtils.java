@@ -1,15 +1,40 @@
 package dev.polluxus.scryfall_sql.util;
 
+import dev.polluxus.scryfall_sql.etl.Configuration;
+import dev.polluxus.scryfall_sql.etl.Etl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
 
 public class ExecutorUtils {
 
+    private static final Logger log = LoggerFactory.getLogger(ExecutorUtils.class);
+
     public static ExecutorService directExecutorService() {
         return new DirectExecutorService();
     }
 
+    public static ExecutorService getExecutor(Configuration config) {
+
+        if (config.parallelism().equals(1)) {
+
+            log.info("Running with parallelism of 1 (disabled)");
+            return directExecutorService();
+        }
+
+        log.warn("Running with parallelism of {}", config.parallelism());
+
+        return Executors.newFixedThreadPool(config.parallelism());
+    }
+
+    /**
+     * An {@link ExecutorService} that runs all tasks on the calling thread,
+     * i.e. synchronously.
+     */
     private static class DirectExecutorService implements ExecutorService {
 
         boolean isShutdown = false;
@@ -70,22 +95,49 @@ public class ExecutorUtils {
 
         @Override
         public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
-            throw new UnsupportedOperationException();
+
+            if (tasks == null) {
+                return Collections.emptyList();
+            }
+
+            return tasks.stream()
+                    .map(c -> {
+                        try {
+                            return c.call();
+                        } catch (Exception e) {
+                            return null;
+                        }
+                    })
+                    .map(c -> (Future<T>) CompletableFuture.completedFuture(c))
+                    .toList();
         }
 
         @Override
         public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException {
-            throw new UnsupportedOperationException();
+            return invokeAll(tasks);
         }
 
         @Override
-        public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
-            throw new UnsupportedOperationException();
+        public <T> T invokeAny(Collection<? extends Callable<T>> tasks) {
+
+            if (tasks == null) {
+                return null;
+            }
+
+            for (var t : tasks) {
+                try {
+                    return t.call();
+                } catch (Exception e) {
+                    // maybe another one will work?
+                }
+            }
+
+            throw new RuntimeException();
         }
 
         @Override
         public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit){
-            throw new UnsupportedOperationException();
+            return invokeAny(tasks);
         }
 
         @Override

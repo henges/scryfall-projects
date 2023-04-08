@@ -38,11 +38,13 @@ public class TmpFileEtlWriter implements EtlWriter {
 
     public TmpFileEtlWriter(Configuration config) {
 
-        this.format = new SqlFormat();
+        this.format = config.format();
+
         this.outputWriter = Io.openWriter(config);
         var sets = Io.writerForTempFile("sets");
         var cards = Io.writerForTempFile("cards");
         var editions = Io.writerForTempFile("editions");
+
         setWriter = sets.getLeft();
         cardWriter = cards.getLeft();
         editionWriter = editions.getLeft();
@@ -52,23 +54,18 @@ public class TmpFileEtlWriter implements EtlWriter {
     }
 
     @Override
-    public void start() {
-        // Noop
-    }
-
-    @Override
-    public void end() {
+    public void commit() {
 
         try {
             log.info("Beginning final write");
-
-            // Close the writers for the temp files
-            Io.flushAndClose(setWriter, cardWriter, editionWriter);
 
             // Open readers for each temp file
             Reader setReader = Io.openReader(setPath);
             Reader cardReader = Io.openReader(cardPath);
             Reader editionReader = Io.openReader(editionPath);
+
+            // Close the writers for the temp files
+            Io.flushAndClose(setWriter, cardWriter, editionWriter);
 
             format.start().ifPresent(s -> Io.writeString(outputWriter, s));
 

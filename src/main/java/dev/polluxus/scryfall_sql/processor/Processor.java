@@ -5,9 +5,9 @@ import java.util.List;
 
 public interface Processor<T> {
 
-    void process(List<T> elements);
+    void accumulate(T element);
 
-    void start();
+    void process(List<T> elements);
 
     void commit();
 }

@@ -6,18 +6,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class Io {
 
     private static final Logger log = LoggerFactory.getLogger(Io.class);
+    private static final Charset CHARSET = StandardCharsets.ISO_8859_1;
 
     public static Writer openWriter(Configuration config) {
 
         try {
             log.info("Opening writer at path {}", config.outputPath());
-            return Files.newBufferedWriter(config.outputPath());
+            return Files.newBufferedWriter(config.outputPath(), CHARSET);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Pair<Writer, Path> writerForTempFile(final String name) {
+
+        try {
+            Path p = Files.createTempFile(name, null);
+            log.info("Created temp file with path {}", p);
+            return Pair.of(new BufferedWriter(new FileWriter(p.toFile(), CHARSET)), p);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -32,7 +46,7 @@ public class Io {
 
         try {
             log.info("Opening reader at path {}", path);
-            return Files.newBufferedReader(path);
+            return Files.newBufferedReader(path, CHARSET);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -57,17 +71,6 @@ public class Io {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        }
-    }
-
-    public static Pair<Writer, Path> writerForTempFile(final String name) {
-
-        try {
-            Path p = Files.createTempFile(name, null);
-            log.info("Created temp file with path {}", p);
-            return Pair.of(new BufferedWriter(new FileWriter(p.toFile())), p);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 

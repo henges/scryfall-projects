@@ -28,7 +28,8 @@ public class CommandLine {
                 outputPath = null,
                 parallelism = null,
                 batchSize = null,
-                writer = null;
+                writer = null,
+                format = null;
 
         while (it.hasNext()) {
             final String s = it.next();
@@ -38,10 +39,11 @@ public class CommandLine {
                 case "-p" -> parallelism = readOrFail(it, "-p");
                 case "-b" -> batchSize = readOrFail(it, "-b");
                 case "-writer" -> writer = readOrFail(it, "-writer");
+                case "-format" -> format = readOrFail(it, "-format");
             }
         }
 
-        return new Configuration(inputPath, outputPath, parallelism, batchSize, writer);
+        return new Configuration(inputPath, outputPath, parallelism, batchSize, writer, format);
     }
 
     private static <T> T readOrFail(Iterator<T> it, String flagName) {

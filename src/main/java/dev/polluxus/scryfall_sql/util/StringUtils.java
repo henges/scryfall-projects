@@ -48,13 +48,13 @@ public class StringUtils {
 
     public static List<String> parseManaCost(final String manaCost) {
         return Arrays.stream(manaCost.split("}\\{"))
-                .map(s -> s.replace("{", "").replace("}", ""))
+                .map(s -> s.replaceAll("[{}]", ""))
                 .toList();
     }
 
     public static Pair<List<String>, List<String>> parseCardTypes(final String typeLine) {
 
-        String[] typesArr = typeLine.split("\s(—|-)\s");
+        String[] typesArr = typeLine.split("\s[—-]\s");
         final List<String> types = new ArrayList<>();
         final List<String> subtypes = new ArrayList<>();
         if (typesArr.length >= 1) {

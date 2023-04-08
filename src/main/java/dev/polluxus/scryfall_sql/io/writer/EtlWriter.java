@@ -8,9 +8,7 @@ import java.util.Collection;
 
 public interface EtlWriter {
 
-    void start();
-
     void write(Collection<MagicSet> sets, Collection<Card> cards, Collection<CardEdition> editions);
 
-    void end();
+    void commit();
 }
