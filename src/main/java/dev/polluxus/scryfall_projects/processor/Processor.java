@@ -5,7 +5,7 @@ import java.util.List;
 
 public interface Processor<T> {
 
-    void process(List<T> elements, Writer writer);
+    void process(List<T> elements);
 
     void commit(Writer writer);
 }

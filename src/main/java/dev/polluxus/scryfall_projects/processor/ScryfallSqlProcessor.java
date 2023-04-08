@@ -47,7 +47,7 @@ public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
     }
 
     @Override
-    public void process(List<ScryfallCard> elements, Writer writer) {
+    public void process(List<ScryfallCard> elements) {
 
         for (var e : elements) {
 
