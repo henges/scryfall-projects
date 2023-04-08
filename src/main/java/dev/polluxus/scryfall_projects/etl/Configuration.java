@@ -1,10 +1,11 @@
-package dev.polluxus.scryfall_projects.cmd;
+package dev.polluxus.scryfall_projects.etl;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 
@@ -38,18 +39,18 @@ public class Configuration {
         return mapper;
     }
 
-    public String inputPath() {
+    public Path inputPath() {
         if (inputPath == null) {
-            return "src/main/resources/card_data/default-cards-20230403090602.json";
+            return Path.of("src/main/resources/card_data/default-cards-20230403090602.json");
         }
-        return inputPath;
+        return Path.of(inputPath);
     }
 
-    public String outputPath() {
+    public Path outputPath() {
         if (outputPath == null) {
-            return "output/output-" + Instant.now().getEpochSecond() + ".sql";
+            return Path.of("output/output-" + Instant.now().getEpochSecond() + ".sql");
         }
-        return outputPath;
+        return Path.of(outputPath);
     }
 
     final static int MAX_PARALLELISM = 100;

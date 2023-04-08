@@ -1,19 +1,18 @@
-package dev.polluxus.scryfall_projects;
+package dev.polluxus.scryfall_projects.etl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingIterator;
-import dev.polluxus.scryfall_projects.cmd.Configuration;
+import dev.polluxus.scryfall_projects.io.IO;
+import dev.polluxus.scryfall_projects.io.SqlEtlWriter;
 import dev.polluxus.scryfall_projects.processor.Processor;
 import dev.polluxus.scryfall_projects.processor.ScryfallCardProcessor;
 import dev.polluxus.scryfall_projects.scryfall.model.ScryfallCard;
 import dev.polluxus.scryfall_projects.util.ExecutorUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -32,14 +31,11 @@ public class Etl {
 
         ExecutorService executor;
 
-        Writer writer;
-
-        static Deps init(Configuration config, Reader reader, Writer writer) {
+        static Deps init(Configuration config) {
             final Deps ret = new Deps();
-            ret.iterator = getIterator(config, reader);
+            ret.iterator = getIterator(config, IO.openReader(config));
             ret.executor = getExecutor(config);
-            ret.processor = new ScryfallCardProcessor();
-            ret.writer = writer;
+            ret.processor = new ScryfallCardProcessor(new SqlEtlWriter(config));
             return ret;
         }
 
@@ -58,8 +54,12 @@ public class Etl {
 
             if (config.parallelism().equals(1)) {
 
+                log.info("Running with parallelism of 1 (disabled)");
                 return ExecutorUtils.directExecutorService();
             }
+
+            log.warn("Warning! Concurrent execution is still unstable and you have requested" +
+                    " parallelism of {}; results may be incorrect!", config.parallelism());
 
             return Executors.newFixedThreadPool(config.parallelism());
         }
@@ -67,10 +67,8 @@ public class Etl {
 
     public static void run(Configuration config) {
 
-        final Pair<Reader, Writer> rw = IO.openFiles(config);
-        final Etl.Deps deps = Deps.init(config, rw.getLeft(), rw.getRight());
+        final Etl.Deps deps = Deps.init(config);
         Etl.process(deps);
-        IO.closeFiles(rw);
     }
 
     public static void process(Deps deps) {
@@ -87,8 +85,6 @@ public class Etl {
 
             buf[i++] = it.next();
             if (i == batchSize) {
-
-                log.info("Thread name in process: {}", Thread.currentThread().getName());
 
                 final List<ScryfallCard> copy = Arrays.asList(buf);
                 executor.submit(() ->
@@ -114,7 +110,7 @@ public class Etl {
             if (!passed) {
                 throw new RuntimeException("DNF");
             }
-            processor.commit(deps.writer);
+            processor.commit();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

@@ -1,6 +1,7 @@
 package dev.polluxus.scryfall_projects;
 
-import dev.polluxus.scryfall_projects.cmd.Configuration;
+import dev.polluxus.scryfall_projects.etl.Configuration;
+import dev.polluxus.scryfall_projects.etl.Etl;
 import org.junit.jupiter.api.Test;
 
 public class EtlTest {

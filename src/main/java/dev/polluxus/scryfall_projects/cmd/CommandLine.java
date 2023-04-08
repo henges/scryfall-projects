@@ -1,6 +1,7 @@
 package dev.polluxus.scryfall_projects.cmd;
 
-import dev.polluxus.scryfall_projects.Etl;
+import dev.polluxus.scryfall_projects.etl.Configuration;
+import dev.polluxus.scryfall_projects.etl.Etl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

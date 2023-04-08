@@ -7,5 +7,7 @@ public interface Processor<T> {
 
     void process(List<T> elements);
 
-    void commit(Writer writer);
+    void start();
+
+    void commit();
 }

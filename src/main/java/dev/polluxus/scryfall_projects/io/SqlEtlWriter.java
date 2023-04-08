@@ -1,34 +1,107 @@
-package dev.polluxus.scryfall_projects.output;
+package dev.polluxus.scryfall_projects.io;
 
+import dev.polluxus.scryfall_projects.etl.Configuration;
 import dev.polluxus.scryfall_projects.model.Card;
 import dev.polluxus.scryfall_projects.model.Card.CardEdition;
 import dev.polluxus.scryfall_projects.model.Card.CardFace;
 import dev.polluxus.scryfall_projects.model.MagicSet;
 import dev.polluxus.scryfall_projects.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 
-public class SqlOutputFormat implements OutputFormat {
+public class SqlEtlWriter implements EtlWriter {
 
-    private final Writer writer;
+    private static final Logger log = LoggerFactory.getLogger(SqlEtlWriter.class);
 
-    public SqlOutputFormat(Writer writer) {
-        this.writer = writer;
+    private final Writer outputWriter;
+
+    private final Writer setWriter;
+    private final Writer cardWriter;
+    private final Writer editionWriter;
+
+    private final Path setPath;
+    private final Path cardPath;
+    private final Path editionPath;
+
+    public SqlEtlWriter(Configuration config) {
+        this.outputWriter = IO.openWriter(config);
+        var sets = IO.writerForTempFile("sets");
+        var cards = IO.writerForTempFile("cards");
+        var editions = IO.writerForTempFile("editions");
+        setWriter = sets.getLeft();
+        cardWriter = cards.getLeft();
+        editionWriter = editions.getLeft();
+        setPath = sets.getRight();
+        cardPath = cards.getRight();
+        editionPath = editions.getRight();
     }
 
-    public void output(Collection<MagicSet> sets, Collection<Card> cards, Collection<CardEdition> editions) {
+    @Override
+    public void start() {
+        // Noop
+    }
 
-        writeString(writer, "BEGIN TRANSACTION;\n");
+    @Override
+    public void end() {
 
-        sets.forEach(s -> writeString(writer, getSetUpsertSql(s)));
-        cards.forEach(s -> writeString(writer, getCardUpsertSql(s)));
-        // editions are dependent on both of the above, so
-        // ensure they are inserted after them
-        editions.forEach(s -> writeString(writer, getEditionUpsertSql(s)));
+        try {
 
-        writeString(writer, "END TRANSACTION;\n");
+            log.info("Beginning final write");
+
+            // Close the writers for the temp files
+            setWriter.flush();
+            cardWriter.flush();
+            editionWriter.flush();
+
+            setWriter.close();
+            cardWriter.close();
+            editionWriter.close();
+
+            // Open readers for each temp file
+            Reader setReader = IO.openReader(setPath);
+            Reader cardReader = IO.openReader(cardPath);
+            Reader editionReader = IO.openReader(editionPath);
+
+            // Write all data to the output
+            writeString(outputWriter, "BEGIN TRANSACTION;\n");
+
+            setReader.transferTo(outputWriter);
+            cardReader.transferTo(outputWriter);
+            // Write editions last since they have set/card FKs
+            editionReader.transferTo(outputWriter);
+
+            writeString(outputWriter, "END TRANSACTION;\n");
+
+            setReader.close();
+            cardReader.close();
+            editionReader.close();
+
+            Files.delete(setPath);
+            Files.delete(cardPath);
+            Files.delete(editionPath);
+
+            outputWriter.flush();
+            outputWriter.close();
+
+            log.info("Results written successfully");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    @Override
+    public void write(Collection<MagicSet> sets, Collection<Card> cards, Collection<CardEdition> editions) {
+
+        sets.forEach(s -> writeString(setWriter, getSetUpsertSql(s)));
+        cards.forEach(s -> writeString(cardWriter, getCardUpsertSql(s)));
+        editions.forEach(s -> writeString(editionWriter, getEditionUpsertSql(s)));
     }
 
     private static final String SET_UPSERT_STATEMENT = """
