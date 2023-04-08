@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import dev.polluxus.scryfall_sql.io.writer.EtlWriter;
+import dev.polluxus.scryfall_sql.io.writer.InMemoryEtlWriter;
+import dev.polluxus.scryfall_sql.io.writer.TmpFileEtlWriter;
 
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
@@ -17,12 +20,25 @@ public class Configuration {
 
     private final String outputPath;
 
-    private final Integer parallelism;
+    private final String parallelism;
 
-    public Configuration(String inputPath, String outputPath, String parallelism) {
+    private final String batchSize;
+
+    private final String writer;
+
+    public Configuration(
+            String inputPath,
+            String outputPath,
+            String parallelism,
+            String batchSize,
+            String writer
+    ) {
         this.inputPath = inputPath;
         this.outputPath = outputPath;
-        this.parallelism = Integer.parseInt(parallelism);
+        this.parallelism = parallelism;
+        this.batchSize = batchSize;
+        this.writer = writer;
+
         this.mapper = initMapper();
     }
 
@@ -59,6 +75,22 @@ public class Configuration {
         if (parallelism == null) {
             return 1;
         }
-        return Math.min(parallelism, MAX_PARALLELISM);
+        return Math.min(Integer.parseInt(parallelism), MAX_PARALLELISM);
+    }
+
+    public Integer batchSize() {
+        if (batchSize == null) {
+            return 50;
+        }
+        return Integer.parseInt(batchSize);
+    }
+
+    public EtlWriter writer() {
+
+        return switch (writer) {
+            case "IN_MEMORY" -> new InMemoryEtlWriter(this);
+            case "TMP_FILE" -> new TmpFileEtlWriter(this);
+            default -> new TmpFileEtlWriter(this);
+        };
     }
 }

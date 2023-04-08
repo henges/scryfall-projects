@@ -6,7 +6,7 @@ CREATE TYPE scryfall.game AS ENUM (
     'ARENA',
     'MTGO',
     'PAPER'
-    );
+);
 
 CREATE TYPE scryfall.colour AS ENUM (
     'W',
@@ -15,7 +15,7 @@ CREATE TYPE scryfall.colour AS ENUM (
     'R',
     'G',
     'COLOURLESS'
-    );
+);
 
 CREATE TYPE scryfall.format AS ENUM (
     'STANDARD',
@@ -29,7 +29,7 @@ CREATE TYPE scryfall.format AS ENUM (
     'BRAWL',
     'HISTORIC',
     'PAUPER'
-    );
+);
 
 CREATE TYPE scryfall.rarity AS ENUM (
     'S',
@@ -37,7 +37,7 @@ CREATE TYPE scryfall.rarity AS ENUM (
     'U',
     'R',
     'M'
-    );
+);
 
 CREATE TABLE scryfall.set
 (

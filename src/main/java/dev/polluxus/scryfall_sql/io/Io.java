@@ -9,9 +9,9 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class IO {
+public class Io {
 
-    private static final Logger log = LoggerFactory.getLogger(IO.class);
+    private static final Logger log = LoggerFactory.getLogger(Io.class);
 
     public static Writer openWriter(Configuration config) {
 
@@ -38,12 +38,43 @@ public class IO {
         }
     }
 
+    public static void close(Reader... readers) {
+        for (var r : readers) {
+            try {
+                r.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public static void flushAndClose(Writer... writers) {
+
+        for (var w : writers) {
+            try {
+                w.flush();
+                w.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     public static Pair<Writer, Path> writerForTempFile(final String name) {
 
         try {
             Path p = Files.createTempFile(name, null);
             log.info("Created temp file with path {}", p);
             return Pair.of(new BufferedWriter(new FileWriter(p.toFile())), p);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void writeString(Writer writer, String string) {
+
+        try {
+            writer.write(string);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

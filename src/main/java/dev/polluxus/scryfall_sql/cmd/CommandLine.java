@@ -26,7 +26,9 @@ public class CommandLine {
         Iterator<String> it = Arrays.asList(args).iterator();
         String inputPath = null,
                 outputPath = null,
-                parallelism = "1";
+                parallelism = null,
+                batchSize = null,
+                writer = null;
 
         while (it.hasNext()) {
             final String s = it.next();
@@ -34,11 +36,12 @@ public class CommandLine {
                 case "-in" -> inputPath = readOrFail(it, "-in");
                 case "-out" -> outputPath = readOrFail(it, "-out");
                 case "-p" -> parallelism = readOrFail(it, "-p");
-                default -> {}
+                case "-b" -> batchSize = readOrFail(it, "-b");
+                case "-writer" -> writer = readOrFail(it, "-writer");
             }
         }
 
-        return new Configuration(inputPath, outputPath, parallelism);
+        return new Configuration(inputPath, outputPath, parallelism, batchSize, writer);
     }
 
     private static <T> T readOrFail(Iterator<T> it, String flagName) {

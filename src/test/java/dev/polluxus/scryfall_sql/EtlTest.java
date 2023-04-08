@@ -9,6 +9,6 @@ public class EtlTest {
     @Test
     public void test() {
 
-        Etl.run(new Configuration(null, "output/test-parallel4.sql", "1"));
+        Etl.run(new Configuration(null, "output/test.sql", "50", "1000", "TMP_FILE"));
     }
 }

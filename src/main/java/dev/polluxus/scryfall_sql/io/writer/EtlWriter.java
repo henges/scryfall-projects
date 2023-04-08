@@ -1,4 +1,4 @@
-package dev.polluxus.scryfall_sql.io;
+package dev.polluxus.scryfall_sql.io.writer;
 
 import dev.polluxus.scryfall_sql.model.Card;
 import dev.polluxus.scryfall_sql.model.Card.CardEdition;

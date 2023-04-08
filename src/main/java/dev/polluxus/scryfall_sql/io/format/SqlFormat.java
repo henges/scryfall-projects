@@ -1,114 +1,31 @@
-package dev.polluxus.scryfall_sql.io;
+package dev.polluxus.scryfall_sql.io.format;
 
-import dev.polluxus.scryfall_sql.etl.Configuration;
 import dev.polluxus.scryfall_sql.model.Card;
 import dev.polluxus.scryfall_sql.model.Card.CardEdition;
 import dev.polluxus.scryfall_sql.model.Card.CardFace;
 import dev.polluxus.scryfall_sql.model.MagicSet;
 import dev.polluxus.scryfall_sql.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collection;
+import java.util.Optional;
 
-public class SqlEtlWriter implements EtlWriter {
+public class SqlFormat implements EtlFormat {
 
-    private static final Logger log = LoggerFactory.getLogger(SqlEtlWriter.class);
-
-    private final Writer outputWriter;
-
-    private final Writer setWriter;
-    private final Writer cardWriter;
-    private final Writer editionWriter;
-
-    private final Path setPath;
-    private final Path cardPath;
-    private final Path editionPath;
-
-    public SqlEtlWriter(Configuration config) {
-        this.outputWriter = IO.openWriter(config);
-        var sets = IO.writerForTempFile("sets");
-        var cards = IO.writerForTempFile("cards");
-        var editions = IO.writerForTempFile("editions");
-        setWriter = sets.getLeft();
-        cardWriter = cards.getLeft();
-        editionWriter = editions.getLeft();
-        setPath = sets.getRight();
-        cardPath = cards.getRight();
-        editionPath = editions.getRight();
+    @Override
+    public Optional<String> start() {
+        return Optional.of("BEGIN TRANSACTION;\n");
     }
 
     @Override
-    public void start() {
-        // Noop
-    }
-
-    @Override
-    public void end() {
-
-        try {
-
-            log.info("Beginning final write");
-
-            // Close the writers for the temp files
-            setWriter.flush();
-            cardWriter.flush();
-            editionWriter.flush();
-
-            setWriter.close();
-            cardWriter.close();
-            editionWriter.close();
-
-            // Open readers for each temp file
-            Reader setReader = IO.openReader(setPath);
-            Reader cardReader = IO.openReader(cardPath);
-            Reader editionReader = IO.openReader(editionPath);
-
-            // Write all data to the output
-            writeString(outputWriter, "BEGIN TRANSACTION;\n");
-
-            setReader.transferTo(outputWriter);
-            cardReader.transferTo(outputWriter);
-            // Write editions last since they have set/card FKs
-            editionReader.transferTo(outputWriter);
-
-            writeString(outputWriter, "END TRANSACTION;\n");
-
-            setReader.close();
-            cardReader.close();
-            editionReader.close();
-
-            Files.delete(setPath);
-            Files.delete(cardPath);
-            Files.delete(editionPath);
-
-            outputWriter.flush();
-            outputWriter.close();
-
-            log.info("Results written successfully");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-    
-    @Override
-    public void write(Collection<MagicSet> sets, Collection<Card> cards, Collection<CardEdition> editions) {
-
-        sets.forEach(s -> writeString(setWriter, getSetUpsertSql(s)));
-        cards.forEach(s -> writeString(cardWriter, getCardUpsertSql(s)));
-        editions.forEach(s -> writeString(editionWriter, getEditionUpsertSql(s)));
+    public Optional<String> end() {
+        return Optional.of("END TRANSACTION;\n");
     }
 
     private static final String SET_UPSERT_STATEMENT = """
             INSERT INTO scryfall.set(code, name, release_date) VALUES ('$1', E'$2', '$3') ON CONFLICT DO NOTHING;
             """.trim();
 
-    private String getSetUpsertSql(MagicSet set) {
+    @Override
+    public String set(MagicSet set) {
 
         final String sql = SET_UPSERT_STATEMENT
                 .replace("$1", set.code())
@@ -142,7 +59,8 @@ public class SqlEtlWriter implements EtlWriter {
             ) ON CONFLICT DO NOTHING;
             """.trim().replaceAll("([\s\n])+", " ");
 
-    private String getCardUpsertSql(Card card) {
+    @Override
+    public String card(Card card) {
 
         final StringBuilder sb = new StringBuilder();
 
@@ -180,7 +98,8 @@ public class SqlEtlWriter implements EtlWriter {
             ON CONFLICT DO NOTHING;
             """.trim().replaceAll("([\s\n])+", " ");
 
-    private String getEditionUpsertSql(CardEdition ed) {
+    @Override
+    public String edition(CardEdition ed) {
 
         final String sql = EDITION_UPSERT_STATEMENT
                 .replace("$1", ed.id().toString())
@@ -193,14 +112,5 @@ public class SqlEtlWriter implements EtlWriter {
                 .replace("$8", StringUtils.delimitedString(ed.games()));
 
         return sql + "\n";
-    }
-
-    private void writeString(Writer writer, String string) {
-
-        try {
-            writer.write(string);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

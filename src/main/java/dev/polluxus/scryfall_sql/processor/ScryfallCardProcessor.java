@@ -4,7 +4,7 @@ import dev.polluxus.scryfall_sql.model.Card;
 import dev.polluxus.scryfall_sql.model.Card.CardEdition;
 import dev.polluxus.scryfall_sql.model.MagicSet;
 import dev.polluxus.scryfall_sql.model.enums.Format;
-import dev.polluxus.scryfall_sql.io.EtlWriter;
+import dev.polluxus.scryfall_sql.io.writer.EtlWriter;
 import dev.polluxus.scryfall_sql.scryfall.converter.ScryfallCardCardConverter;
 import dev.polluxus.scryfall_sql.scryfall.converter.ScryfallCardCardEditionConverter;
 import dev.polluxus.scryfall_sql.scryfall.converter.ScryfallCardMagicSetConverter;
@@ -30,20 +30,21 @@ public class ScryfallCardProcessor implements Processor<ScryfallCard> {
     private final ConcurrentMap<UUID, Boolean> cardLocks = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Boolean> editionLocks = new ConcurrentHashMap<>();
 
-    private final EtlWriter format;
+    private final EtlWriter writer;
 
-    public ScryfallCardProcessor(EtlWriter format) {
-        this.format = format;
+    public ScryfallCardProcessor(EtlWriter writer) {
+        this.writer = writer;
     }
 
     @Override
     public void start() {
-        format.start();
+        writer.start();
     }
 
     @Override
     public void commit() {
-        format.end();
+        log.info("Final count: sets {}, cards {}, editions {}", setLocks.size(), cardLocks.size(), editionLocks.size());
+        writer.end();
     }
 
     @Override
@@ -71,6 +72,6 @@ public class ScryfallCardProcessor implements Processor<ScryfallCard> {
             }
         }
 
-        format.write(sets, cards, editions);
+        writer.write(sets, cards, editions);
     }
 }
