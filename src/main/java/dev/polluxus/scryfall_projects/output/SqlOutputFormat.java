@@ -1,88 +1,41 @@
-package dev.polluxus.scryfall_projects.processor;
+package dev.polluxus.scryfall_projects.output;
 
 import dev.polluxus.scryfall_projects.model.Card;
 import dev.polluxus.scryfall_projects.model.Card.CardEdition;
 import dev.polluxus.scryfall_projects.model.Card.CardFace;
 import dev.polluxus.scryfall_projects.model.MagicSet;
-import dev.polluxus.scryfall_projects.model.enums.Format;
-import dev.polluxus.scryfall_projects.scryfall.converter.ScryfallCardCardConverter;
-import dev.polluxus.scryfall_projects.scryfall.converter.ScryfallCardCardEditionConverter;
-import dev.polluxus.scryfall_projects.scryfall.converter.ScryfallCardMagicSetConverter;
-import dev.polluxus.scryfall_projects.scryfall.model.ScryfallCard;
 import dev.polluxus.scryfall_projects.util.StringUtils;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Deque;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.Collection;
 
-public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
+public class SqlOutputFormat implements OutputFormat {
 
-    private final ConcurrentHashMap<UUID, Boolean> processedOracleIds = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Boolean> processedSets = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Boolean> processedEditions = new ConcurrentHashMap<>();
-    private final ScryfallCardCardConverter cardConverter = new ScryfallCardCardConverter();
-    private final ScryfallCardCardEditionConverter editionConverter = new ScryfallCardCardEditionConverter();
-    private final ScryfallCardMagicSetConverter setConverter = new ScryfallCardMagicSetConverter();
+    private final Writer writer;
 
-    private final Deque<String> setUpserts = new ConcurrentLinkedDeque<>();
-    private final Deque<String> cardUpserts = new ConcurrentLinkedDeque<>();
-    private final Deque<String> editionUpserts = new ConcurrentLinkedDeque<>();
+    public SqlOutputFormat(Writer writer) {
+        this.writer = writer;
+    }
 
-    @Override
-    public void commit(Writer writer) {
+    public void output(Collection<MagicSet> sets, Collection<Card> cards, Collection<CardEdition> editions) {
 
         writeString(writer, "BEGIN TRANSACTION;\n");
 
-        setUpserts.forEach(s -> writeString(writer, s));
-        cardUpserts.forEach(s -> writeString(writer, s));
+        sets.forEach(s -> writeString(writer, getSetUpsertSql(s)));
+        cards.forEach(s -> writeString(writer, getCardUpsertSql(s)));
         // editions are dependent on both of the above, so
         // ensure they are inserted after them
-        editionUpserts.forEach(s -> writeString(writer, s));
+        editions.forEach(s -> writeString(writer, getEditionUpsertSql(s)));
 
         writeString(writer, "END TRANSACTION;\n");
-    }
-
-    @Override
-    public void process(List<ScryfallCard> elements) {
-
-        for (var e : elements) {
-
-            if (!Format.hasValidFormat(e.legalities()) || e.games().isEmpty()) {
-                System.out.println("Skipping invalid card " + e.name());
-                continue;
-            }
-            // Avoid processing entities we've already processed.
-            boolean setExists = processedSets.putIfAbsent(e.set(), true) != null;
-            if (!setExists) {
-                final MagicSet set = setConverter.convert(e);
-                setUpserts.add(getSetUpsertSql(set));
-            }
-            if (e.oracleId() == null) {
-                System.out.println("WTF! Busted ass data" + e);
-                continue;
-            }
-            boolean cardExists = processedOracleIds.putIfAbsent(e.oracleId(), true) != null;
-            if (!cardExists) {
-                final Card card = cardConverter.convert(e);
-                cardUpserts.add(getCardUpsertSql(card));
-            }
-            boolean editionExists = processedEditions.putIfAbsent(e.set() + "~" + e.collectorNumber(), true) != null;
-            if (!editionExists) {
-                final CardEdition edition = editionConverter.convert(e);
-                editionUpserts.add(getEditionUpsertSql(edition));
-            }
-        }
     }
 
     private static final String SET_UPSERT_STATEMENT = """
             INSERT INTO scryfall.set(code, name, release_date) VALUES ('$1', E'$2', '$3') ON CONFLICT DO NOTHING;
             """.trim();
 
-    private static String getSetUpsertSql(MagicSet set) {
+    private String getSetUpsertSql(MagicSet set) {
 
         final String sql = SET_UPSERT_STATEMENT
                 .replace("$1", set.code())
@@ -116,7 +69,7 @@ public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
             ) ON CONFLICT DO NOTHING;
             """.trim().replaceAll("([\s\n])+", " ");
 
-    private static String getCardUpsertSql(Card card) {
+    private String getCardUpsertSql(Card card) {
 
         final StringBuilder sb = new StringBuilder();
 
@@ -154,7 +107,7 @@ public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
             ON CONFLICT DO NOTHING;
             """.trim().replaceAll("([\s\n])+", " ");
 
-    private static String getEditionUpsertSql(CardEdition ed) {
+    private String getEditionUpsertSql(CardEdition ed) {
 
         final String sql = EDITION_UPSERT_STATEMENT
                 .replace("$1", ed.id().toString())
@@ -169,7 +122,7 @@ public class ScryfallSqlProcessor implements Processor<ScryfallCard> {
         return sql + "\n";
     }
 
-    private static void writeString(Writer writer, String string) {
+    private void writeString(Writer writer, String string) {
 
         try {
             writer.write(string);

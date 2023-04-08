@@ -2,6 +2,8 @@ package dev.polluxus.scryfall_projects;
 
 import dev.polluxus.scryfall_projects.cmd.Configuration;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -11,6 +13,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class IO {
+
+    private static final Logger log = LoggerFactory.getLogger(IO.class);
 
     public static Pair<Reader, Writer> openFiles(Configuration config) {
 
@@ -40,13 +44,14 @@ public class IO {
         try {
             r.close();
         } catch (IOException e) {
-            System.out.println("Error closing reader: " + e);
+            log.warn("Error closing reader", e);
         }
 
         try {
             w.flush();
             w.close();
         }  catch (IOException e) {
+            log.error("Error closing writer!", e);
             throw new RuntimeException("Error closing writer!", e);
         }
     }

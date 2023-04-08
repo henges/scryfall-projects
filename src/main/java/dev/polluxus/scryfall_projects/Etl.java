@@ -4,10 +4,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingIterator;
 import dev.polluxus.scryfall_projects.cmd.Configuration;
 import dev.polluxus.scryfall_projects.processor.Processor;
-import dev.polluxus.scryfall_projects.processor.ScryfallSqlProcessor;
+import dev.polluxus.scryfall_projects.processor.ScryfallCardProcessor;
 import dev.polluxus.scryfall_projects.scryfall.model.ScryfallCard;
 import dev.polluxus.scryfall_projects.util.ExecutorUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -19,6 +21,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class Etl {
+
+    private static final Logger log = LoggerFactory.getLogger(Etl.class);
 
     private static class Deps {
 
@@ -34,7 +38,7 @@ public class Etl {
             final Deps ret = new Deps();
             ret.iterator = getIterator(config, reader);
             ret.executor = getExecutor(config);
-            ret.processor = new ScryfallSqlProcessor();
+            ret.processor = new ScryfallCardProcessor();
             ret.writer = writer;
             return ret;
         }
@@ -84,11 +88,12 @@ public class Etl {
             buf[i++] = it.next();
             if (i == batchSize) {
 
+                log.info("Thread name in process: {}", Thread.currentThread().getName());
+
                 final List<ScryfallCard> copy = Arrays.asList(buf);
                 executor.submit(() ->
-                processor.process(copy)
-                )
-                ;
+                    processor.process(copy)
+                );
                 i = 0;
             }
         }
@@ -100,8 +105,7 @@ public class Etl {
             final ScryfallCard[] copy = Arrays.copyOf(buf, i);
             executor.submit(() ->
                 processor.process(Arrays.asList(copy))
-            )
-            ;
+            );
         }
 
         try {

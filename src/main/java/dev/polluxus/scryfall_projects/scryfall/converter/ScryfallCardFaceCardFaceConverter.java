@@ -6,12 +6,16 @@ import dev.polluxus.scryfall_projects.scryfall.model.ScryfallCard;
 import dev.polluxus.scryfall_projects.scryfall.model.ScryfallCard.ScryfallCardFace;
 import dev.polluxus.scryfall_projects.util.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 public class ScryfallCardFaceCardFaceConverter implements Converter<Pair<ScryfallCard, ScryfallCardFace>, CardFace> {
+
+    private static final Logger log = LoggerFactory.getLogger(ScryfallCardFaceCardFaceConverter.class);
 
     @Override
     public CardFace convert(Pair<ScryfallCard, ScryfallCardFace> source) {
@@ -32,7 +36,7 @@ public class ScryfallCardFaceCardFaceConverter implements Converter<Pair<Scryfal
         if (face.colors() != null) {
             colours = StringUtils.parseColours(face.colors());
         } else {
-            System.out.println(face);
+            log.trace("Card face with no colours: {}", face);
             colours = StringUtils.parseColours(card.colors());
         }
 

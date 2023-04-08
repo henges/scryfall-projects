@@ -1,15 +1,19 @@
 package dev.polluxus.scryfall_projects.cmd;
 
 import dev.polluxus.scryfall_projects.Etl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Iterator;
 
 public class CommandLine {
 
+    private static final Logger log = LoggerFactory.getLogger(CommandLine.class);
+
     public static void main(String[] args) {
 
-        System.out.println(Arrays.toString(args));
+        log.trace(Arrays.toString(args));
 
         Configuration config = fromArgs(args);
 

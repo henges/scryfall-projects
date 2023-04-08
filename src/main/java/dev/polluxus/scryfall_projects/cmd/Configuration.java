@@ -52,7 +52,7 @@ public class Configuration {
         return outputPath;
     }
 
-    final static int MAX_PARALLELISM = 50;
+    final static int MAX_PARALLELISM = 100;
 
     public Integer parallelism() {
         if (parallelism == null) {

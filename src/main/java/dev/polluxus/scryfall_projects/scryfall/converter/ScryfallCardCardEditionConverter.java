@@ -4,6 +4,8 @@ import dev.polluxus.scryfall_projects.model.Card.CardEdition;
 import dev.polluxus.scryfall_projects.model.enums.Game;
 import dev.polluxus.scryfall_projects.model.enums.Rarity;
 import dev.polluxus.scryfall_projects.scryfall.model.ScryfallCard;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -13,6 +15,8 @@ import java.util.stream.Collectors;
 
 public class ScryfallCardCardEditionConverter implements Converter<ScryfallCard, CardEdition> {
 
+    private static final Logger log = LoggerFactory.getLogger(ScryfallCardCardEditionConverter.class);
+
     @Override
     public CardEdition convert(ScryfallCard source) {
 
@@ -21,7 +25,7 @@ public class ScryfallCardCardEditionConverter implements Converter<ScryfallCard,
         final String setCode = source.set();
         final String collectorNumber = source.collectorNumber();
         final Rarity rarity = Optional.ofNullable(Rarity.get(source.rarity())).orElseGet(() -> {
-            System.out.println("Error processing ScryfallCard: " + source);
+            log.trace("Error processing ScryfallCard: " + source);
             return Rarity.C;
         });
         final boolean isReprint = source.reprint();
